@@ -1,0 +1,23 @@
+services:
+  postgres-locking:
+    image: postgres:17
+    container_name: postgres-locking
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: labdb
+    ports:
+      - "5440:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
+      - postgres-data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c deadlock_timeout=1s
+      -c log_lock_waits=on
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+
+volumes:
+  postgres-data:

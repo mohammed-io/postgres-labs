@@ -1,0 +1,28 @@
+services:
+  postgres-perf:
+    image: postgres:17
+    container_name: postgres-perf
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: labdb
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5441:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
+      - postgres-data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=16MB
+      -c maintenance_work_mem=256MB
+      -c random_page_cost=1.1
+      -c shared_preload_libraries=pg_stat_statements
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+
+volumes:
+  postgres-data:

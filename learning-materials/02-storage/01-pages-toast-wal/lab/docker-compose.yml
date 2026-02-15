@@ -1,0 +1,24 @@
+services:
+  postgres-storage:
+    image: postgres:17
+    container_name: postgres-storage
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: labdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
+      - postgres-data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c max_wal_size=2GB
+      -c wal_compression=on
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+
+volumes:
+  postgres-data:

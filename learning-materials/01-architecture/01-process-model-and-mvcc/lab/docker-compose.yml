@@ -1,0 +1,21 @@
+services:
+  postgres-arch:
+    image: postgres:17
+    container_name: postgres-arch
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: labdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+      timeout: 1s
+      retries: 5
+
+volumes:
+  postgres-data:

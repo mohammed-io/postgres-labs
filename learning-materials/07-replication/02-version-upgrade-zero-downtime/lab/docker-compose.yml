@@ -1,0 +1,50 @@
+services:
+  # Postgres 17 (current version)
+  pg-upgrade-17:
+    image: postgres:17
+    container_name: pg-upgrade-17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg17-data:/var/lib/postgresql/data
+      - ./setup-17.sql:/docker-entrypoint-initdb.d/01-setup.sql
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+
+  # Postgres 18 (target version)
+  pg-upgrade-18:
+    image: postgres:18
+    container_name: pg-upgrade-18
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg18-data:/var/lib/postgresql/data
+      - ./setup-18.sql:/docker-entrypoint-initdb.d/01-setup.sql
+    command: >
+      postgres
+      -c max_replication_slots=10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 1s
+
+volumes:
+  pg17-data:
+  pg18-data:

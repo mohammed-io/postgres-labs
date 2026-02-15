@@ -1,0 +1,10 @@
+[project]
+name = "postgres-deep-dive"
+version = "1.0.0"
+description = "PostgreSQL Deep Dive Labs"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "python-frontmatter>=1.1.0",
+    "streamlit>=1.40.0",
+]
