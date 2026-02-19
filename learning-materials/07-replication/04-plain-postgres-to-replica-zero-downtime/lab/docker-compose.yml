@@ -34,7 +34,7 @@ services:
       until pg_isready -h postgres-primary -U postgres -d appdb; do sleep 1; done;
       rm -rf /var/lib/postgresql/data/*;
       export PGPASSWORD=replicator_pass;
-      pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -P -w -R -X fetch;
+      pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -P -w -R -X stream --slot replica_1_slot;
       chmod 700 /var/lib/postgresql/data;
       exec postgres"
     healthcheck:
@@ -60,7 +60,7 @@ services:
       until pg_isready -h postgres-primary -U postgres -d appdb; do sleep 1; done;
       rm -rf /var/lib/postgresql/data/*;
       export PGPASSWORD=replicator_pass;
-      pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -P -w -R -X fetch;
+      pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -P -w -R -X stream --slot replica_2_slot;
       chmod 700 /var/lib/postgresql/data;
       exec postgres"
     healthcheck:

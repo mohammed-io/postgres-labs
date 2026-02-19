@@ -101,6 +101,134 @@ Lab IDs are relative paths like `01-architecture/01-process-model-and-mvcc`.
 4. Optionally create `step-*.md` hint files and `solution.md`
 5. The app auto-discovers all `problem.md` files on startup
 
+## Lab Requirements (MANDATORY)
+
+### `problem.md` Requirements
+
+Every `problem.md` MUST include:
+
+1. **Scenario Section** - A realistic context for the problem (who, what, why)
+2. **Why This Lab Exists** - Motivation and real-world relevance
+3. **Real-World Example** - Concrete example from production scenarios:
+   - What actually happened
+   - What went wrong (if applicable)
+   - What the lab teaches to prevent/solve it
+4. **What You Will Build/Learn** - Clear outcomes
+5. **Quick Start** - How to get the environment running
+6. **Lab Flow** - Ordered list of steps to follow
+
+Example structure:
+```markdown
+## Scenario
+You are a DBA at a fintech company...
+
+## Why This Lab Exists
+Most tutorials start with preconfigured servers. Real production doesn't...
+
+## Real-World Example
+In 2023, Company X lost 2 hours of data because their replica was 
+configured without replication slots. When network lag occurred, 
+WAL files were recycled and the replica couldn't catch up...
+
+## What You Will Build
+Phase 1: [Primary only]
+Phase 2: [Primary] => [Replicas]
+
+## Quick Start
+\`\`\`bash
+cd lab && docker compose up -d
+\`\`\`
+
+## Lab Flow
+1. Read `step-01.md`: ...
+```
+
+### `lab/` Directory Requirements
+
+Every lab MUST contain these files (no placeholders):
+
+| File | Purpose | Requirements |
+|------|---------|--------------|
+| `setup.sql` | Initial schema/data | Executable, creates realistic test data |
+| `verify.sql` | Verification queries | Multiple sections, checks all key metrics |
+| `explore.sql` | Discovery queries | Helps users understand the system state |
+| `benchmark.sql` | Performance tests | Measures relevant metrics with timing |
+| `break-it.sql` | Failure scenarios | **Executable SQL**, not just comments. Minimum 3 scenarios |
+| `docker-compose.yml` | Environment | Isolated containers, proper healthchecks |
+
+### `break-it.sql` Requirements
+
+This file is for learning through controlled failure. It MUST:
+
+1. Contain **executable SQL** (not just comments describing what to do)
+2. Include at least **3 distinct failure scenarios**
+3. Each scenario should have:
+   - Clear description of what breaks
+   - SQL to trigger the failure
+   - SQL to observe the failure
+   - SQL to recover (commented)
+   - Expected error messages or symptoms
+
+Example structure:
+```sql
+-- EXPERIMENT 1: [Title]
+-- =====================================
+-- What breaks: ...
+-- Prerequisites: ...
+
+-- Step 1: Trigger
+ALTER SYSTEM SET some_param = 'dangerous_value';
+
+-- Step 2: Observe
+SELECT ... FROM pg_stat_...;
+
+-- Expected: Error "..." or symptom "..."
+
+-- Recovery (uncomment to fix):
+-- ALTER SYSTEM RESET some_param;
+```
+
+### `verify.sql` Requirements
+
+This file validates the lab was completed correctly. It MUST:
+
+1. Be organized into **named sections** using `SELECT 'section_name' AS section;`
+2. Check **all key metrics** for the lab's topic
+3. Include a **health summary** at the end
+4. Work on both primary and replica where applicable
+5. Include data consistency checks where relevant
+
+### `solution.md` Requirements
+
+The solution is a reference, not the only path. It MUST:
+
+1. Include **baseline checks** before making changes
+2. Explain **why** each step is needed (not just commands)
+3. Include **verification steps** after each major change
+4. Include **cleanup/reset instructions** for re-running the lab
+5. Include **failback procedures** for HA/replication labs
+6. Include **data consistency verification** after migrations/failovers
+7. Include **troubleshooting table** for common issues
+
+### `step-*.md` Requirements
+
+Step files teach incrementally. They MUST:
+
+1. Have a **clear goal** at the top
+2. Include **conceptual explanations** with tables/diagrams
+3. Provide **commands to run** with expected output
+4. Include **troubleshooting tips** at the end
+5. NOT give direct answers (teach the concept, let user apply it)
+
+### Docker Compose Requirements
+
+1. Use **named containers** for clarity (e.g., `pg-primary`, `pg-replica-1`)
+2. Include **healthchecks** for all services
+3. Use **profiles** for optional services (e.g., replicas)
+4. Map **distinct ports** to avoid conflicts (5451, 5452, etc.)
+5. Use **named volumes** for persistence
+6. Include **init scripts** via `/docker-entrypoint-initdb.d/`
+
 ## Teaching Philosophy
 
 Labs follow a progression: **problem → explore → practice → verify**. Step files teach concepts incrementally rather than giving answers. The `break-it.sql` files encourage learning through failure (e.g., what happens when you exceed connection limits).

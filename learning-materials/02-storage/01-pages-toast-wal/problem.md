@@ -8,20 +8,96 @@ concepts: ["pages", "tuples", "TOAST", "WAL", "file layout", "checkpoint"]
 
 # Pages, TOAST & WAL
 
+## Scenario
+
+You're investigating:
+1. Why queries on a table with large JSONB columns are slow
+2. What happens when a row exceeds 8KB
+3. How WAL affects write performance
+4. Understanding disk layout for backup planning
+
+Your job is to understand how PostgreSQL physically stores data.
+
+## Why This Lab Exists
+
+Most tutorials focus on SQL queries and performance tuning, but storage mechanics are equally important:
+- Understanding page structure helps optimize queries
+- Knowing TOAST behavior explains why some columns cause slow scans
+- WAL knowledge is critical for backup/recovery and replication
+- Checkpoint tuning balances I/O performance and crash recovery speed
+
+Without understanding these basics, you can't properly diagnose storage-related performance issues or design efficient backup strategies.
+
+## Real-World Example
+
+### 1. Large JSONB Columns Causing Slow Queries
+
+**Problem:** A table with `metadata JSONB` averaging 50KB per row. Querying by ID takes 50ms instead of expected 5ms.
+
+**Root cause:** Each heap fetch reads the entire 50KB TOAST chunk even though only a small portion of the JSON is needed. This is inefficient I/O.
+
+**Solution:** Use INCLUDE indexes or select only needed columns.
+
+**What this teaches:** TOAST stores oversized values separately. If you query a TOAST column frequently, consider INCLUDE indexes or select specific columns.
+
+### 2. Storage Bloat After Mass Updates
+
+**Problem:** Running `UPDATE products SET status = 'processed'` on 1M rows doubles the table size. Dead tuples not cleaned up.
+
+**Root cause:** Autovacuum interval too long for high-write workload. Table shows `n_dead_tup > n_live_tup` in `pg_stat_user_tables`.
+
+**Solution:** Tune autovacuum settings or run manual VACUUM.
+
+**What this teaches:** Page splits and dead tuples accumulate over time. Understanding page layout helps diagnose fragmentation.
+
+### 3. WAL Disk Filling Up
+
+**Problem:** High write traffic (10K writes/sec) causes WAL to grow at 1GB/min, filling disk.
+
+**Root cause:** Checkpoint interval too long, `wal_buffers` too small. WAL needs to accumulate enough data before checkpoints, but if they're infrequent, WAL grows without bound.
+
+**Solution:** Adjust `checkpoint_timeout`, `max_wal_size`, and `wal_buffers`.
+
+**What this teaches:** WAL is crucial for crash recovery and replication. If it fills disk, you lose both current data and recovery capability.
+
+### 4. Page Splits Causing Fragmentation
+
+**Problem:** Table with `fillfactor=100` (default). Updates cause rows to grow, needing new pages. Table has 50% empty space but no room for new updates.
+
+**Root cause:** No space reserved for growth. When a row expands, it moves to a new page, leaving behind partially filled old pages.
+
+**Solution:** Lower `fillfactor` to 80-90 for frequently updated tables.
+
+**What this teaches:** Page structure with line pointers. Understanding how rows fit in pages helps optimize storage.
+
+## What You Will Build
+
+```
+Phase 1: [Page Structure Analysis] - Examine 8KB pages, tuples, line pointers
+Phase 2: [TOAST Investigation] - Create large rows, see how they're stored
+Phase 3: [WAL Performance] - Measure write throughput with different settings
+Phase 4: [Checkpoint Behavior] - Observe I/O patterns and recovery time
+```
+
+## Quick Start
+
+```bash
+cd postgres-deep-dive/learning-materials/02-storage/01-pages-toast-wal/lab
+docker-compose up -d
+```
+
+## Lab Flow
+
+1. Read `step-01.md`: Explore Page Structure - examine 8KB pages, tuples, line pointers
+2. Read `step-02.md`: Understand TOAST - create rows larger than 8KB, see storage mechanism
+3. Read `step-03.md`: WAL Impact on Performance - measure write throughput with different settings
+4. Read `step-04.md`: Checkpoint Behavior - observe I/O patterns and recovery time
+5. Run `lab/verify.sql` throughout to validate your understanding
+6. Try `lab/break-it.sql` - see what happens when page limits are exceeded
+
 ## Learning Objectives
 
 Understand how PostgreSQL physically stores data on disk.
-
-## Why This Matters
-
-| Concept | Production Impact |
-|---------|-------------------|
-| **8KB Pages** | Large rows span pages, affecting I/O |
-| **TOAST** | JSONB/text columns stored separately. Understanding TOAST helps query planning. |
-| **WAL** | Write-Ahead Log enables crash recovery and replication. |
-| **Checkpoints** | Frequent checkpoints = more I/O but faster crash recovery. |
-
-## Real World Use
 
 ### When This Matters
 
@@ -48,42 +124,6 @@ Understand how PostgreSQL physically stores data on disk.
    - Updates cause row to grow, needs new page
    - Result: Table has 50% empty space but no room for updates
    - Solution: Lower fillfactor for frequently updated tables
-
-## Architecture Overview
-
-```mermaid
-graph TB
-    subgraph "PostgreSQL Storage"
-        subgraph "Disk Files"
-            PG[PGDATA/base/]
-            F1[16384/ - Database files]
-            F2[16384_fsm/ - Free Space Map]
-            F3[16384_vm/ - Visibility Map]
-        end
-
-        subgraph "Page Structure 8KB"
-            H[Page Header<br/>24 bytes]
-            D[(Tuple Data<br/>~8KB)]
-            L[Line Pointer<br/>2 bytes each]
-        end
-
-        subgraph "TOAST"
-            T1[pg_toast/1234<br/>Oversized values]
-        end
-
-        subgraph "WAL"
-            W[pg_wal/0000000100000000...]
-        end
-    end
-```
-
-## Scenario
-
-You're investigating:
-1. Why queries on a table with large JSONB columns are slow
-2. What happens when a row exceeds 8KB
-3. How WAL affects write performance
-4. Understanding disk layout for backup planning
 
 ## Your Tasks
 

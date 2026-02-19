@@ -8,81 +8,6 @@ concepts: ["process model", "client connections", "shared memory", "MVCC", "tran
 
 # PostgreSQL Process Model & MVCC
 
-## Learning Objectives
-
-Understand how PostgreSQL handles connections and concurrency at the process level.
-
-## Why This Matters
-
-| Concept | Production Impact |
-|---------|-------------------|
-| **Process-per-connection model** | Each connection uses ~10MB memory. 1000 connections = ~10GB RAM! |
-| **MVCC** | Enables readers to never block writers. But creates dead tuples requiring vacuum. |
-| **Transaction isolation** | Affects data consistency vs. concurrency trade-off. |
-| **Connection pooling** | Essential for scaling to thousands of concurrent users. |
-
-## Real World Use
-
-### Verified Real-World Cases
-
-**1. OpenAI - Scaling ChatGPT on PostgreSQL ([InfoQ](https://www.infoq.com/news/2026/02/openai-runs-chatgpt-postgres/))**
-   - Single primary PostgreSQL handling millions of requests
-   - Uses **PgBouncer in transaction-pooling mode** to manage connection limits
-   - Reduced latency from **50ms to under 5ms** through connection pooling
-   - Prevents connection spikes and reduces setup latency
-
-**2. GitLab - Database Deletion Incident (2017) ([Official Postmortem](https://about.gitlab.com/blog/postmortem-of-database-outage-of-january-31/))**
-   - Engineer accidentally removed production data during routine maintenance
-   - **300GB of data lost**, 6 hours of production data permanently lost
-   - ~18 hours of downtime
-   - Root cause: Human error + inadequate backup/recovery safeguards
-   - Led to industry-wide changes in DB operational practices
-
-**3. Instagram - PostgreSQL Sharding to 300M+ Users ([Instagram Engineering](https://instagram-engineering.com/instagration-pt-2-scaling-our-infrastructure-to-multiple-data-centers-5745cbad7834))**
-   - Scaled from small startup to **300M users by 2014**, **1B by 2018**
-   - Kept PostgreSQL instead of moving to NoSQL
-   - Implemented manual sharding across multiple PostgreSQL instances
-   - Used Redis for shard mapping/routing
-   - 400M daily photo uploads handled by 2012
-
-## Architecture Overview
-
-```mermaid
-graph TB
-    subgraph "PostgreSQL Server"
-        subgraph "Background Processes"
-            PG1[postmaster<br/>Parent process]
-            BG1[autovacuum<br/>Cleans dead tuples]
-            BG2[walwriter<br/>Writes WAL to disk]
-            BG3[checkpointer<br/>Writes dirty buffers]
-        end
-
-        subgraph "Client Connections"
-            C1[Backend Process 1<br/>Client A connection<br/>~10MB RAM]
-            C2[Backend Process 2<br/>Client B connection<br/>~10MB RAM]
-            C3[Backend Process N<br/>~10MB each]
-        end
-
-        subgraph "Shared Memory"
-            SM1[shared_buffers<br/>Data cache]
-            SM2[WAL buffers<br/>Transaction log]
-            SM3[Lock table<br/>Concurrency control]
-        end
-    end
-
-    ClientA[Client App A] -->|TCP| PG1
-    ClientB[Client App B] -->|TCP| PG1
-    ClientC[Client App C] -->|TCP| PG1
-
-    PG1 --> C1
-    PG1 --> C2
-    PG1 --> C3
-
-    C1 <--> SM1
-    C2 <--> SM1
-    C3 <--> SM1
-```
-
 ## Scenario
 
 You're a DBA investigating a production issue:
@@ -90,13 +15,52 @@ You're a DBA investigating a production issue:
 - Database server shows high memory usage
 - Some queries appear "stuck"
 
-Your tasks:
-1. Understand PostgreSQL's process model
-2. See how MVCC enables concurrent access
-3. Learn what each background process does
-4. Practice connection management strategies
+Your job is to understand what's happening under the hood.
 
-## Prerequisites
+## Why This Lab Exists
+
+Most tutorials skip the internal mechanics of how PostgreSQL handles concurrency. Understanding this is critical for:
+- Diagnosing connection issues
+- Planning capacity for production workloads
+- Choosing the right connection pooling strategy
+- Avoiding resource exhaustion from excessive processes
+
+The process-per-connection model and MVCC are foundational to PostgreSQL's design. Without understanding them, you can't properly tune performance or troubleshoot real-world problems.
+
+## Real-World Example
+
+### 1. Instagram - Scaling to 300M+ Users ([Instagram Engineering](https://instagram-engineering.com/instagration-pt-2-scaling-our-infrastructure-to-multiple-data-centers-5745cbad7834))
+
+Instagram scaled from a small startup to **300M users by 2014** while keeping PostgreSQL. Key insight: they used **manual sharding** and **connection pooling** (Redis for routing).
+
+Memory impact: Each connection uses ~10MB of RAM. Without pooling, 1000 connections would consume ~10GB - unsustainable.
+
+### 2. GitLab - Database Deletion Incident (2017) ([Official Postmortem](https://about.gitlab.com/blog/postmortem-of-database-outage-of-january-31/))
+
+An engineer accidentally removed **300GB of production data** during routine maintenance, causing **6 hours of downtime**.
+
+Root cause: Inadequate backup verification + insufficient operational safeguards.
+
+What this teaches: Connection management, backup discipline, and understanding process limits are not theoretical - they prevent production disasters.
+
+### 3. OpenAI - ChatGPT on PostgreSQL ([InfoQ](https://www.infoq.com/news/2026/02/openai-runs-chatgpt-postgres/))
+
+Single PostgreSQL primary handling **millions of requests per day**.
+
+They used **PgBouncer in transaction-pooling mode** to manage connections, reducing latency from **50ms to under 5ms**.
+
+What this teaches: Connection pooling isn't an optimization - it's essential for modern applications.
+
+## What You Will Build
+
+```
+Phase 1: [Process Model Analysis] - Understand process-per-connection, MVCC, shared memory
+Phase 2: [MVCC Experiment] - Create non-blocking read/write scenarios
+Phase 3: [Background Process Investigation] - Map autovacuum, WAL writer, checkpointer roles
+Phase 4: [Connection Management] - Test limits and learn pooling strategies
+```
+
+## Quick Start
 
 ```bash
 # Start the lab environment
@@ -105,6 +69,38 @@ docker-compose up -d
 
 # Verify Postgres is running
 docker exec postgres-arch psql -U postgres -c "SELECT version();"
+```
+
+## Lab Flow
+
+1. Read `step-01.md`: Explore the Process Model - identify processes and memory usage
+2. Read `step-02.md`: Understand MVCC in Action - create concurrent read/write scenarios
+3. Read `step-03.md`: Background Process Investigation - learn autovacuum, WAL writer, checkpointer
+4. Read `step-04.md`: Connection Limits - test max_connections and see connection pooling in action
+5. Run `lab/verify.sql` throughout to validate your understanding
+6. Try `lab/break-it.sql` - what happens when you exceed limits?
+
+## Learning Objectives
+
+After completing this lab, you should be able to:
+1. Explain PostgreSQL's process-per-connection model
+2. Describe how MVCC enables non-blocking reads
+3. Identify all background processes and their roles
+4. Understand when connection pooling is necessary
+5. Recognize the memory implications of many connections
+6. Troubleshoot connection-related performance issues
+
+## Prerequisites
+
+```bash
+# 1. Start the environment
+cd lab
+docker-compose up -d
+
+# 2. Connect to Postgres
+docker exec -it postgres-arch psql -U postgres
+
+# 3. Check the step files if you need hints
 ```
 
 ## Your Tasks
@@ -139,19 +135,6 @@ Test what happens when you exceed connection limits:
 - Default `max_connections` is 100
 - What happens at connection 101?
 - How does connection pooling help?
-
-## Getting Started
-
-```bash
-# 1. Start the environment
-cd lab
-docker-compose up -d
-
-# 2. Connect to Postgres
-docker exec -it postgres-arch psql -U postgres
-
-# 3. Check the step files if you need hints
-```
 
 ## Verification
 
