@@ -1,13 +1,13 @@
 services:
-  postgres-index:
+  postgres-query:
     image: postgres:17
-    container_name: postgres-index
+    container_name: postgres-query
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: labdb
     ports:
-      - "5434:5432"
+      - "5443:5432"
     volumes:
       - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
       - postgres-data:/var/lib/postgresql/data
@@ -15,7 +15,6 @@ services:
       postgres
       -c shared_buffers=256MB
       -c random_page_cost=1.1
-      -c effective_cache_size=1GB
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 1s

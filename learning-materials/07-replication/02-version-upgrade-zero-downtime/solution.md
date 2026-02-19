@@ -54,7 +54,7 @@ WITH (copy_data = true);
 
 ```sql
 -- On pg-18, monitor lag
-SELECT EXTRACT(EPOCH FROM (now() - replay_lag))::int AS lag_seconds
+SELECT EXTRACT(EPOCH FROM latest_end_time - last_msg_send_time)::int AS lag_seconds
 FROM pg_stat_subscription;
 
 -- Wait until lag = 0 or 1

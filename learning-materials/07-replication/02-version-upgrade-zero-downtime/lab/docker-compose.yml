@@ -36,7 +36,7 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - pg18-data:/var/lib/postgresql/data
+      - pg18-data:/var/lib/postgresql
       - ./setup-18.sql:/docker-entrypoint-initdb.d/01-setup.sql
     command: >
       postgres

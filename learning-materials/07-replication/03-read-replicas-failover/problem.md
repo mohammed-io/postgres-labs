@@ -59,5 +59,5 @@ SELECT * FROM pg_stat_replication;
 SELECT NOW() - pg_last_xact_replay_timestamp() AS lag;
 
 -- Failover: Promote replica
-docker exec replica-1 pg_ctl promote -D /var/lib/postgresql/data;
+docker exec pg-replica-1 pg_ctl promote -D /var/lib/postgresql/data;
 ```

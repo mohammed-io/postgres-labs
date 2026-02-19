@@ -1,5 +1,7 @@
 -- Setup for Primary database
 
+CREATE ROLE replicator WITH LOGIN REPLICATION PASSWORD 'replicator_pass';
+
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     name TEXT,
@@ -14,7 +16,7 @@ CREATE TABLE traffic_metrics (
 
 INSERT INTO products (name, price)
 SELECT 'Product ' || i, (random() * 100)::decimal(10,2)
-FROM generate_series(1, 100);
+FROM generate_series(1, 100) AS s(i);
 
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO postgres;
 GRANT USAGE ON SCHEMA public TO postgres;

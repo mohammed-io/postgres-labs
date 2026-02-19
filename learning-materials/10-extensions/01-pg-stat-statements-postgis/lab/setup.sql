@@ -2,6 +2,8 @@
 
 -- pg_stat_statements is loaded via shared_preload_libraries
 -- PostGIS includes it automatically
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,

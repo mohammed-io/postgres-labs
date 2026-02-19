@@ -65,7 +65,7 @@ CREATE PUBLICATION upgrade_pub FOR ALL TABLES;
 
 ```sql
 -- Copy schema (no data yet)
-pg_dump -h pg-17 -U postgres --schema-only appdb | psql -h pg-18 -U postgres appdb
+pg_dump -h pg-upgrade-17 -U postgres --schema-only appdb | psql -h pg-upgrade-18 -U postgres appdb
 ```
 
 ### Step 4: Create Subscription
@@ -73,7 +73,7 @@ pg_dump -h pg-17 -U postgres --schema-only appdb | psql -h pg-18 -U postgres app
 ```sql
 -- On Postgres 18
 CREATE SUBSCRIPTION upgrade_sub
-CONNECTION 'host=pg-17 port=5432 user=postgres dbname=appdb'
+CONNECTION 'host=pg-upgrade-17 port=5432 user=postgres dbname=appdb'
 PUBLICATION upgrade_pub
 WITH (copy_data = true);
 ```
@@ -84,7 +84,7 @@ WITH (copy_data = true);
 -- On Postgres 18, monitor lag
 SELECT
     subname,
-    EXTRACT(EPOCH FROM (now() - replay_lag))::int AS lag_seconds
+    EXTRACT(EPOCH FROM latest_end_time - last_msg_send_time)::int AS lag_seconds
 FROM pg_stat_subscription;
 -- Wait until lag = 0 or 1
 ```

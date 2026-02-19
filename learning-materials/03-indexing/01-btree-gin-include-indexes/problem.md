@@ -32,10 +32,10 @@ Master PostgreSQL indexing strategies for real-world query performance.
    - Problem: Must fetch each row from heap to get `total`, `order_date`
    - Solution: `CREATE INDEX idx_orders_customer_inc ON orders(customer_id) INCLUDE (order_date, total)`
 
-2. **JSONB array queries slow**
+2. **Array membership queries slow**
    - Query: `SELECT * FROM events WHERE tags @> ARRAY['urgent', 'vip']`
    - Full table scan, 500ms response time
-   - Problem: No index on JSONB column
+   - Problem: No index on array column
    - Solution: `CREATE INDEX idx_events_tags_gin ON events USING GIN (tags)`
 
 3. **Too many indexes slowing writes**

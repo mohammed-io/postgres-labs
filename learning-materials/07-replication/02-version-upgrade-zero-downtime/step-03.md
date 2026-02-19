@@ -76,8 +76,8 @@ FROM pg_stat_subscription;
 -- On Postgres 18
 SELECT
     subname,
-    EXTRACT(EPOCH FROM (now() - replay_lag))::int AS lag_seconds,
-    EXTRACT(EPOCH FROM (now() - flush_lag))::int AS flush_lag_seconds
+    EXTRACT(EPOCH FROM latest_end_time - last_msg_send_time)::int AS lag_seconds,
+    EXTRACT(EPOCH FROM latest_end_time - last_msg_receipt_time)::int AS receipt_lag_seconds
 FROM pg_stat_subscription;
 ```
 

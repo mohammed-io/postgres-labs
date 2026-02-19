@@ -43,7 +43,7 @@ FROM generate_series(1, 100000) AS s(i);
 INSERT INTO orders (customer_id, product_id, quantity, total, status)
 SELECT
     (random() * 10000 + 1)::int,
-    (random() * 100000 + 1)::int,
+    (floor(random() * 100000) + 1)::int,
     (random() * 10 + 1)::int,
     (random() * 1000)::decimal(10,2),
     (ARRAY ['pending', 'shipped', 'delivered'])[floor(random() * 3 + 1)]

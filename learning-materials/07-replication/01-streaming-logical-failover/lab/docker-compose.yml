@@ -1,24 +1,25 @@
 services:
-  postgres-index:
+  pg-primary:
     image: postgres:17
-    container_name: postgres-index
+    container_name: pg-repl-primary
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: labdb
+      POSTGRES_DB: appdb
     ports:
-      - "5434:5432"
+      - "5450:5432"
     volumes:
       - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
-      - postgres-data:/var/lib/postgresql/data
+      - primary-data:/var/lib/postgresql/data
     command: >
       postgres
-      -c shared_buffers=256MB
-      -c random_page_cost=1.1
-      -c effective_cache_size=1GB
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c hot_standby=on
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 1s
 
 volumes:
-  postgres-data:
+  primary-data:
