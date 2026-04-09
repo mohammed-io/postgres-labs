@@ -282,7 +282,7 @@ def main():
             "Topic", ordered_groups, index=category_index
         )
         selected = st.selectbox(
-            "Lab", grouped_problems[category], index=problem_index
+            "Lab", grouped_problems[category], index=min(problem_index, len(grouped_problems[category]) - 1)
         )
 
         coach_data.set_current_problem(selected.id)

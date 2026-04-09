@@ -1,0 +1,26 @@
+services:
+  pg-hot-updates:
+    image: postgres:17
+    container_name: pg-hot-updates
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: labdb
+    ports:
+      - "5462:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
+      - pg-hot-updates-data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c autovacuum=off
+      -c wal_level=minimal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d labdb"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pg-hot-updates-data:
